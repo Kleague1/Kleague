@@ -63,13 +63,26 @@ K리그1·K리그2의 **최종순위 확률**을 옵타(Opta) 슈퍼컴퓨터 �
 
 ## 사용법
 
-```bash
-pip install -r requirements.txt
+Python 3.9+ 필요. 처음 한 번 내려받아 설치한다.
 
+```bash
+git clone https://github.com/Kleague1/Kleague.git
+cd Kleague
+pip install -r requirements.txt
+```
+
+그 다음, 필요할 때마다 실행한다.
+
+```bash
 python k1_analysis.py     # K리그1 콘솔 리포트 (대전 진출 확률)
 python k2_analysis.py     # K리그2 콘솔 리포트 (승격 확률)
 python heatmap.py         # heatmap_k1.png, heatmap_k2.png 생성
 ```
+
+- **다시 실행 = 최신 갱신**: 데이터는 kleague.com에서 실시간으로 받으므로, 라운드가
+  지나면 위 명령을 다시 실행하기만 하면 최신 순위·일정 기준으로 확률이 갱신된다.
+- GitHub 자체는 코드를 실행하지 않는다(저장소일 뿐). 실행은 위처럼 내 PC(또는 서버)에서 한다.
+- 한글 폰트: Windows는 맑은 고딕, 그 외 환경은 나눔고딕 등 설치 후 표시 폰트를 맞춰야 한다.
 
 ## 주요 튜닝 노브 (각 분석 파일 상단)
 
