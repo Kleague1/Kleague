@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
+from matplotlib import rcParams, font_manager
 from matplotlib.colors import LinearSegmentedColormap, PowerNorm
 
 try:
@@ -25,7 +25,13 @@ try:
 except Exception:
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-rcParams["font.family"] = "Malgun Gothic"
+# 한글 폰트: 환경에 있는 것을 자동 선택 (Windows=맑은고딕, Linux(CI)=나눔고딕 등)
+_available = {f.name for f in font_manager.fontManager.ttflist}
+for _cand in ["Malgun Gothic", "NanumGothic", "AppleGothic",
+              "Noto Sans CJK KR", "Noto Sans KR", "Gulim"]:
+    if _cand in _available:
+        rcParams["font.family"] = _cand
+        break
 rcParams["axes.unicode_minus"] = False
 
 N_SIMS = 100_000
