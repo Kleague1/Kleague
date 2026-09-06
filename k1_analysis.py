@@ -5,7 +5,6 @@ K리그1 최종순위 예측 — 옵타식 몬테카를로 (대전 하나 시티
 - 실력 : (1) 경기별 Elo (Opta Power Rankings식) — 2024~2026 K1+K2 전 경기를 시간순으로
              돌려 상대강도·최근성·득점차(MOV)를 반영 (승강팀 이력까지 연속 반영)
          (2) 포아송 득점 모델 — Elo차 → 홈/원정 기대득점(λ) → 스코어 샘플
-         (3) 맞대결(H2H) 보정 (선택)
 - 데이터: kleague.com 공식 JSON 실시간 수집 (kleague_data.py)
 
 K리그1 스플릿 구조 (이 파일은 두 국면을 라운드로 자동 판별)
@@ -41,7 +40,6 @@ RANDOM_SEED = None
 TARGET_TEAM = "대전"
 LIVE_YEAR = 2026
 ELO_YEARS = (2024, 2025, 2026)
-H2H_YEARS = (2024, 2025, 2026)
 
 TOTAL_REGULAR_ROUNDS = 33      # 이 라운드까지 정규, 그 다음이 파이널 스플릿
 FINAL_A_SIZE = 6               # 파이널 A(상위 그룹) 크기
@@ -51,8 +49,6 @@ HAS_SPLIT = True
 ELO_START, ELO_K, SEASON_REGRESS, HFA_ELO, USE_MOV = 1500, 20, 0.30, 55, True
 # 포아송 득점 모델
 K_GOALS, LEAGUE_TOTAL_GOALS = 0.0040, None
-# 맞대결 보정
-USE_H2H, H2H_SCALE, H2H_BASE_PPG, H2H_SHRINK_K, H2H_CAP = True, 80, 1.4, 5, 60
 
 QUALIFICATION = {
     1: "ACLE 본선 직행", 2: "ACLE 본선 직행", 3: "ACLE 본선 직행",
@@ -69,7 +65,6 @@ try:
     MATCHES = sorted(kl.fetch_completed_matches(ELO_YEARS, "1")
                      + kl.fetch_completed_matches(ELO_YEARS, "2"),
                      key=lambda m: (m["year"], m["date"]))
-    HEAD_TO_HEAD = kl.fetch_h2h(TARGET_TEAM, H2H_YEARS, LEAGUE)
 except Exception as e:
     print(f"[데이터 수집 실패] {e}\n인터넷 연결을 확인하세요.")
     sys.exit(1)
@@ -78,7 +73,6 @@ NUM_TEAMS = len(TEAMS)
 REGULAR_FIXTURES = [(h, a) for h, a, r in _remaining if r <= TOTAL_REGULAR_ROUNDS]
 FINALS_FIXTURES = [(h, a) for h, a, r in _remaining if r > TOTAL_REGULAR_ROUNDS]
 PRE_SPLIT = bool(REGULAR_FIXTURES)
-HEAD_TO_HEAD = {k: v for k, v in HEAD_TO_HEAD.items() if k[1] in TEAMS}
 
 if LEAGUE_TOTAL_GOALS is None:
     _cur = [m for m in MATCHES if m["year"] == LIVE_YEAR and m["home"] in TEAMS]
@@ -120,21 +114,6 @@ for t in TEAMS:
     ELO.setdefault(t, ELO_START)
 
 
-def h2h_delta(home, away):
-    if (home, away) in HEAD_TO_HEAD:
-        w, d, l = HEAD_TO_HEAD[(home, away)]
-    elif (away, home) in HEAD_TO_HEAD:
-        l, d, w = HEAD_TO_HEAD[(away, home)]
-    else:
-        return 0.0
-    g = w + d + l
-    if g == 0:
-        return 0.0
-    ppg = (3 * w + d) / g
-    shrink = g / (g + H2H_SHRINK_K)
-    return max(-H2H_CAP, min(H2H_CAP, (ppg - H2H_BASE_PPG) * H2H_SCALE * shrink))
-
-
 def poisson(lam):
     L, k, p = math.exp(-lam), 0, 1.0
     while True:
@@ -146,8 +125,6 @@ def poisson(lam):
 
 def expected_goals(home, away):
     diff = (ELO[home] + HFA_ELO) - ELO[away]
-    if USE_H2H:
-        diff += h2h_delta(home, away)
     sup = diff * K_GOALS
     return max(0.12, LEAGUE_HALF + sup / 2), max(0.12, LEAGUE_HALF - sup / 2)
 
